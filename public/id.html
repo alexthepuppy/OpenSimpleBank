@@ -4,6 +4,8 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>OSB - Identity</title>
+
+        <script src="/common/utils.js"></script>
     </head>
     <body>
         <div class="box">
@@ -28,26 +30,12 @@
             return {username:username, password:password}
         }
 
-        async function makeRequest(path) {
-            const inputs = getInputs();
-            const request = new Request(`/api/${path}`, {
-                method: 'POST',
-                body: JSON.stringify(inputs),
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            });
-            const reply = await fetch(request);
-            if (reply.status == 500) throw new Error(reply);
-            return reply;
-        }
-
         function updateStatus(message) {
             document.getElementById('status').innerText = message;
         }
 
         function login() {
-            makeRequest('account/login/').then(() => {
+            makePOSTRequest('account/login/', getInputs()).then(() => {
                 updateStatus("Logged in!");
             }).catch(() => {
                 updateStatus("Failed to login!");
@@ -55,7 +43,7 @@
         }
 
         function signup() {
-            makeRequest('account/signup/').then(() => {
+            makePOSTRequest('account/signup/', getInputs()).then(() => {
                 updateStatus("Account created");
             }).catch(() => {
                 updateStatus("Failed to signup!");

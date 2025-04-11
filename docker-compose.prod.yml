@@ -1,3 +1,6 @@
+networks:
+  osb-internal:
+
 services:
   db:
     image: postgres
@@ -10,3 +13,12 @@ services:
       - 6969:5432
     volumes:
       - ./live/pgdata:/var/lib/postgresql/data
+    networks:
+      - osb-internal
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - 3030:80
+    networks:
+      - osb-internal

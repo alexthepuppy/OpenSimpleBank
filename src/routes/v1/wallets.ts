@@ -1,10 +1,10 @@
 // Imports
 import { Router } from 'express';
 // import logger from '../logger';
-import { RestrictedAccessMiddlewear } from '../middlewear/identitygate';
+import { RestrictedAccessMiddlewear } from '../../middlewear/identitygate';
 import { PrismaClient } from '@prisma/client';
-import { assert, isnull } from '../utils/general';
-import { TokenData } from '../utils/identity';
+import { assert, isnull } from '../../utils/general';
+import { TokenData } from '../../utils/identity';
 import winston from 'winston';
 
 // Get database connection

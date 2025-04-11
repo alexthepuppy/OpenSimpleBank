@@ -1,6 +1,6 @@
 // Imports
 import { Prisma, PrismaClient, TransactionStatus } from '@prisma/client';
-import { ifndef, isnull } from './general';
+import { ifndef } from './general';
 import { BalanceInsufficentError, CurrencyMismatchError, NoSuchWalletError, UserUnauthorisedError } from './errors';
 import { canStartTransactionFor } from './permissions';
 
@@ -16,7 +16,7 @@ type Wallet = Prisma.WalletGetPayload<{
 
 export { Wallet, WalletValidator };
 
-async function getWallet(address: string) : Promise<Wallet> {
+export async function getWallet(address: string) : Promise<Wallet> {
     return await dbcon.wallet.findUnique({where: { id: address }, include: WalletValidator});
 }
 
@@ -36,7 +36,7 @@ export async function beginTransaction(debtorAddress: string, creditorAddress: s
     });
 
     // Step 2. Validate if the current user is allowed to make transactions with that wallet
-    let authorised = canStartTransactionFor(actorToken, debtorAddress);
+    const authorised = canStartTransactionFor(actorToken, debtorAddress);
 
     if (!authorised) throw new UserUnauthorisedError();
 

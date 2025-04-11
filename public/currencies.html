@@ -4,6 +4,9 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>OSB - Currency Page</title>
+
+
+        <script src="/common/utils.js"></script>
     </head>
     <body>
         <div id="app">
@@ -75,26 +78,6 @@
                 alert(":(")
                 console.error(e);
             })
-        }
-
-        async function makePOSTRequest(path, body) {
-            if (typeof body == "object") body = JSON.stringify(body);
-            const request = new Request(`/api/${path}`, {
-                method: 'POST',
-                body: body,
-                headers: {"Content-Type": "application/json"}
-            });
-            const reply = await fetch(request);
-            return reply;
-        }
-
-        async function makeGETRequest(path) {
-            if (typeof body == "object") body = JSON.stringify(body);
-            const request = new Request(`/api/${path}`, {
-                method: 'GET'
-            });
-            const reply = await fetch(request);
-            return reply;
         }
 
         function makeCurrencyActionColumn(address) {

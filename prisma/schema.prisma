@@ -29,7 +29,7 @@ model UserAccount {
   Tokens             Token[]
   DefaultApplication Application?            @relation(fields: [defaultApplicationId], references: [id], "primary")
   Memberships        ApplicationMembership[]
-  // Permissions PermissionRecord[]
+  Roles EntitlementRoleMembership[]
 }
 
 model Token {
@@ -65,30 +65,21 @@ model Application {
   description String?
   icon_uri    String?
 
+  entitlementGroupKey String
+
   // Virtual
   Tokens              Token[]
   Memberships         ApplicationMembership[]
   MembersWhoDefaulted UserAccount[]           @relation("primary")
   Wallets             Wallet[]
   Currencies          Currency[]
+  EntitlementGroup    EntitlementGroup @relation(fields: [entitlementGroupKey], references: [id])
 }
-
-// For storing LONG TERM permissions
-// model PermissionRecord {
-//   id                   String      @id @default(cuid())
-//   userId String
-
-//   permissions Permission[]
-
-//   User UserAccount @relation(fields: [userId], references: [id])
-// }
 
 model ApplicationMembership {
   applicationId String
   accountId     String
   joinedOn      DateTime @default(now())
-
-  isOwner Boolean @default(false)
 
   Application Application @relation(fields: [applicationId], references: [id])
   Account     UserAccount @relation(fields: [accountId], references: [id])
@@ -191,122 +182,180 @@ model Currency {
   WalletsUsing Wallet[]
 }
 
-// enum Permission {
-//   ALL
 
-//   // Account
-//   ACCOUNT_LOGIN
-//   ACCOUNT_CREATE
-//   ACCOUNT_FORGET_PASSWORD
-//   ACCOUNT_LIST_ALL
 
-//   // Account/Token
-//   ACCOUNT_TOKENS_LIST
-//   ACCOUNT_TOKENS_CREATE
-//   ACCOUNT_TOKENS_DELETE
-//   ACCOUNT_TOKENS_DELETE_ALL
-//   ACCOUNT_TOKENS_MODIFY
-//   ACCOUNT_TOKENS_MODIFY_ALL
+// Permission Stuff
+model EntitlementGroup {
+  id String @id @default(cuid())          // Unique ID to identify it
+  label String?                           // Human-friendly name
+  internal Boolean @default(false)        // For internal-program use (like @everyone, @admins, @banned, etc)
+  hidden Boolean @default(true)           // Should this group be hidden from the end-users
 
-//   // Account/Session
-//   ACCOUNT_SESSION_LIST
-//   ACCOUNT_SESSION_DELETE
-//   ACCOUNT_SESSION_READ
+  Roles EntitlementRole[] @relation("roles")
+  ApplicationsUsedIn Application[]  
+}
 
-//   // Account/Memberships
-//   ACCOUNT_MEMBERSHIP_LIST
-//   ACCOUNT_MEMBERSHIP_JOIN
-//   ACCOUNT_MEMBERSHIP_LEAVE
-//   ACCOUNT_MEMBERSHIP_READ
+enum EntitlementListType {
+  GenericRole
+  Everyone
+  GroupMembers
+  GroupAdmins
+  GroupOwners
+}
 
-//   // Account/set
-//   ACCOUNT_WRITE_ALL
-//   ACCOUNT_WRITE_USERNAME
-//   ACCOUNT_WRITE_PASSWORD
-//   ACCOUNT_WRITE_DEFAULT_APPLICATION
+model EntitlementRoleMembership {
+  roleId String
+  userId String
 
-//   // Account/get
-//   ACCOUNT_READ_ALL
-//   ACCOUNT_READ_USERNAME
-//   ACCOUNT_READ_EMAIL
-//   ACCOUNT_READ_CREATION
-//   ACCOUNT_READ_DEFAULT_APPLICATION
+  Role EntitlementRole @relation(fields: [roleId], references: [id])
+  User UserAccount @relation(fields: [userId], references: [id])
 
-//   // Session
-//   SESSION_LIST
-//   SESSION_VIEW
-//   SESSION_VIEW_ALL
-//   SESSION_DELETE
-//   SESSION_DELETE_ALL
+  @@id([roleId, userId])
+}
 
-//   // Currency
-//   CURRENCY_CREATE
-//   CURRENCY_DISTROY
+model EntitlementRole {
+  id String @id @default(cuid())
+  listType EntitlementListType @default(GenericRole)
 
-//   // Currency/List
-//   CURRENCY_LIST
-//   CURRENCY_LIST_PUBLIC
+  internal Boolean @default(false)        // For internal-program use (like @everyone, @admins, @banned, etc)
+  hidden Boolean @default(true)           // Should this group be hidden from the end-users
+  name String?
+  priority Int @default(100)
 
-//   // Currency/Info
-//   CURRENCY_INFO_READ_BASIC
-//   CURRENCY_INFO_READ_FORMATTING
-//   CURRENCY_INFO_READ_VOLUME
-//   CURRENCY_INFO_READ_LIQUIDITY
+  Entitlements Entitlement[]
+  UsedInGroups EntitlementGroup[] @relation("roles")
+  Memberships EntitlementRoleMembership[]
+}
 
-//   CURRENCY_INFO_WRITE_FORMATTING
-//   CURRENCY_INFO_WRITE_VOLUME
-//   CURRENCY_INFO_WRITE_VOLUME_IGNORELIMITS
+model Entitlement { // A permission to do (or prevent you from doing) something
+  aclKey String
+  class EntitlementClass
+  mode EntitlementMode
 
-//   CURRENCY_ADMIN_LIST
-//   CURRENCY_ADMIN_ADD
-//   CURRENCY_ADMIN_REMOVE
+  @@id([aclKey, class])
+  Role EntitlementRole @relation(fields: [aclKey], references: [id])
+}
 
-//   CURRENCY_ISSUE_GRANT
+enum EntitlementMode {
+  Grant
+  Reject
+}
 
-//   // Application
-//   APPLICATION_CREATE
-//   APPLICATION_LIST
-//   APPLICATION_LIST_PUBLIC
-//   APPLICATION_DELETE
-//   APPLICATION_DELETE_ALL
+enum EntitlementClass {
+  ADMINISTRATOR
 
-//   APPLICATION_TOKEN_READ_INFO
-//   APPLICATION_TOKEN_LIST
-//   APPLICATION_TOKEN_CREATE
-//   APPLICATION_TOKEN_DELETE
+  ACCOUNT_LOGIN
+  ACCOUNT_CREATE
+  ACCOUNT_FORGET_PASSWORD
+  ACCOUNT_LIST_ALL
 
-//   APPLICATION_INFO_READ_NAME
-//   APPLICATION_INFO_READ_DESCRIPTION
-//   APPLICATION_INFO_READ_IMAGE_URI
-//   APPLICATION_INFO_READ_ISPUBLIC
-//   APPLICATION_INFO_READ_ISINTERNAL
+  // Account/Token
+  ACCOUNT_TOKENS_LIST
+  ACCOUNT_TOKENS_CREATE
+  ACCOUNT_TOKENS_DELETE
+  ACCOUNT_TOKENS_DELETE_ALL
+  ACCOUNT_TOKENS_MODIFY
+  ACCOUNT_TOKENS_MODIFY_ALL
 
-//   APPLICATION_INFO_WRITE_NAME
-//   APPLICATION_INFO_WRITE_DESCRIPTION
-//   APPLICATION_INFO_WRITE_IMAGE_URI
-//   APPLICATION_INFO_WRITE_ISPUBLIC
+  // Account/Session
+  ACCOUNT_SESSION_LIST
+  ACCOUNT_SESSION_DELETE
+  ACCOUNT_SESSION_READ
 
-//   // Transactions
-//   TRANSACTION_LIST
-//   TRANSACTION_CREATE
+  // Account/Memberships
+  ACCOUNT_MEMBERSHIP_LIST
+  ACCOUNT_MEMBERSHIP_JOIN
+  ACCOUNT_MEMBERSHIP_LEAVE
+  ACCOUNT_MEMBERSHIP_READ
 
-//   TRANSACTION_INFO_READ_DEBTOR
-//   TRANSACTION_INFO_READ_CREDITOR
-//   TRANSACTION_INFO_READ_VALUE
-//   TRANSACTION_INFO_READ_PARTIAL_VALUE
-//   TRANSACTION_INFO_READ_STATUS
-//   TRANSACTION_INFO_READ_CREATION_TIMESTAMP
-//   TRANSACTION_INFO_READ_UPDATE_TIMESTAMP
-//   TRANSACTION_INFO_READ_HEADLINE
-//   TRANSACTION_INFO_READ_DESCRIPTION
+  // Account/set
+  ACCOUNT_WRITE_ALL
+  ACCOUNT_WRITE_USERNAME
+  ACCOUNT_WRITE_PASSWORD
+  ACCOUNT_WRITE_DEFAULT_APPLICATION
 
-//   // Wallets
-//   WALLET_LIST
-//   WALLET_CREATE
-//   WALLET_DELETE
-//   WALLET_MEMBER_LIST
-//   WALLET_MEMBER_REMOVE
-//   WALLET_MEMBER_ADD
-//   WALLET_MEMBER_LIST_PERMS
-//   WALLET_MEMBER_CHANGE_PERMS
-// }
+  // Account/get
+  ACCOUNT_READ_ALL
+  ACCOUNT_READ_USERNAME
+  ACCOUNT_READ_EMAIL
+  ACCOUNT_READ_CREATION
+  ACCOUNT_READ_DEFAULT_APPLICATION
+
+  // Session
+  SESSION_LIST
+  SESSION_VIEW
+  SESSION_VIEW_ALL
+  SESSION_DELETE
+  SESSION_DELETE_ALL
+
+  // Currency
+  CURRENCY_CREATE
+  CURRENCY_DISTROY
+
+  // Currency/List
+  CURRENCY_LIST
+  CURRENCY_LIST_PUBLIC
+
+  // Currency/Info
+  CURRENCY_INFO_READ_BASIC
+  CURRENCY_INFO_READ_FORMATTING
+  CURRENCY_INFO_READ_VOLUME
+  CURRENCY_INFO_READ_LIQUIDITY
+
+  CURRENCY_INFO_WRITE_FORMATTING
+  CURRENCY_INFO_WRITE_VOLUME
+  CURRENCY_INFO_WRITE_VOLUME_IGNORELIMITS
+
+  CURRENCY_ADMIN_LIST
+  CURRENCY_ADMIN_ADD
+  CURRENCY_ADMIN_REMOVE
+
+  CURRENCY_ISSUE_GRANT
+
+  // Application
+  APPLICATION_CREATE
+  APPLICATION_LIST
+  APPLICATION_LIST_PUBLIC
+  APPLICATION_DELETE
+  APPLICATION_DELETE_ALL
+
+  APPLICATION_TOKEN_READ_INFO
+  APPLICATION_TOKEN_LIST
+  APPLICATION_TOKEN_CREATE
+  APPLICATION_TOKEN_DELETE
+
+  APPLICATION_INFO_READ_NAME
+  APPLICATION_INFO_READ_DESCRIPTION
+  APPLICATION_INFO_READ_IMAGE_URI
+  APPLICATION_INFO_READ_ISPUBLIC
+  APPLICATION_INFO_READ_ISINTERNAL
+
+  APPLICATION_INFO_WRITE_NAME
+  APPLICATION_INFO_WRITE_DESCRIPTION
+  APPLICATION_INFO_WRITE_IMAGE_URI
+  APPLICATION_INFO_WRITE_ISPUBLIC
+
+  // Transactions
+  TRANSACTION_LIST
+  TRANSACTION_CREATE
+
+  TRANSACTION_INFO_READ_DEBTOR
+  TRANSACTION_INFO_READ_CREDITOR
+  TRANSACTION_INFO_READ_VALUE
+  TRANSACTION_INFO_READ_PARTIAL_VALUE
+  TRANSACTION_INFO_READ_STATUS
+  TRANSACTION_INFO_READ_CREATION_TIMESTAMP
+  TRANSACTION_INFO_READ_UPDATE_TIMESTAMP
+  TRANSACTION_INFO_READ_HEADLINE
+  TRANSACTION_INFO_READ_DESCRIPTION
+
+  // Wallets
+  WALLET_LIST
+  WALLET_CREATE
+  WALLET_DELETE
+  WALLET_MEMBER_LIST
+  WALLET_MEMBER_REMOVE
+  WALLET_MEMBER_ADD
+  WALLET_MEMBER_LIST_PERMS
+  WALLET_MEMBER_CHANGE_PERMS
+}

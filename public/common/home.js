@@ -1,4 +1,7 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable linebreak-style */
+const API_VERSION = 'v1';
+
 function sendPayment() {
     const source = document.getElementById('sources').value;
     const dest = document.getElementById('creditor').value;
@@ -63,7 +66,7 @@ function makeCurrency() {
 
 async function makePOSTRequest(path, body) {
     if (typeof body == 'object') body = JSON.stringify(body);
-    const request = new Request(`/api/${path}`, {
+    const request = new Request(`/api/${API_VERSION}/${path}`, {
         method: 'POST',
         body: body,
         headers: {'Content-Type': 'application/json'}
@@ -73,7 +76,7 @@ async function makePOSTRequest(path, body) {
 }
 
 async function makeGETRequest(path) {
-    const request = new Request(`/api/${path}`, {
+    const request = new Request(`{/api/${API_VERSION}/${path}`, {
         method: 'GET'
     });
     const reply = await fetch(request);

@@ -1,5 +1,6 @@
-import { isnull } from "./general";
-import { TokenData } from "./identity";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { isnull } from './general';
+import { TokenData } from './identity';
 import { PrismaClient } from '@prisma/client';
 
 // Get database connection
@@ -16,7 +17,7 @@ export async function canMakeCurrencyForApplication(actor: Token, applicationID:
         if (actor == '@me') throw new Error(); // NO @ME IN UTILS
         else if (typeof(actor) != 'string') 
             actor = (actor as TokenData).publicKey;
-        const tokend = await dbcon.token.findFirst({ where: {identity: actor} })
+        const tokend = await dbcon.token.findFirst({ where: {identity: actor} });
 
         if (tokend?.applicationId == applicationID) return true;
         return false;
@@ -61,11 +62,6 @@ export async function canUserLogin(userID: string): Promise<boolean> {
 }
 
 export async function canCreateApplicationFor(actor: Token, targetUser: string): Promise<boolean> {
-    try {
-
-    } catch(e) {
-        return false;
-    }
     return false;
 }
 

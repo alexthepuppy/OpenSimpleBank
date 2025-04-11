@@ -7,6 +7,7 @@ const api_file_transport = new winston.transports.File({ filename: 'api.log', fo
 const console_transport = new winston.transports.Console({ format: winston.format.cli() });
 const http_file_transport = new winston.transports.File({ filename: 'http.log', format: winston.format.simple() });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const myWinstonOptions = {
     transports: [console_transport]
 };

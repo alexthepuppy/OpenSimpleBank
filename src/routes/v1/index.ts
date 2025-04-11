@@ -2,8 +2,6 @@
 import { Router } from 'express';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
-// import logger from '../logger';
-import winston from 'winston';
 
 // Imports - Routes
 import accounts_route from './accounts';
@@ -11,10 +9,11 @@ import wallets_route from './wallets';
 import transaction_route from './transactions';
 import currency_route from './currency';
 import application_route from './applications';
-import { OptionalIdentificationMiddlewear } from '../middlewear/identitygate';
+import { OptionalIdentificationMiddlewear } from '../../middlewear/identitygate';
 import { v4 as uuidv4 } from 'uuid';
 
-import { api_log, http_log } from '../logger';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { api_log, http_log } from '../../logger';
 
 // Create our apps
 const api_route = Router();

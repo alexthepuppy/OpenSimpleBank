@@ -1,9 +1,12 @@
+/* eslint-disable no-case-declarations */
 // Imports
-import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { InvalidLoginCredentialsError, InvalidPasswordError, InvalidTokenSecret, InvalidUsernameError, MissingRequiredParametersError, NoSuchTokenError, NoSuchUserError } from './errors';
 import { isnull } from './general';
+import { addOwnerToApp, createGroupsInternalRoles } from './applications';
 
 // Load some config
 const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
@@ -22,8 +25,12 @@ export interface TokenData {
 const dbcon = new PrismaClient();
 
 // Interfaces
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type Nothing = undefined | null;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type UserSessionData = [secret: string, issued: Date, expires: Date];
+
+
 
 // Internals
 export async function createUser(username: string, password: string, email: string | undefined, isAdmin: boolean = false, canLogin: boolean = true) {
@@ -42,17 +49,21 @@ export async function createUser(username: string, password: string, email: stri
                 create: {
                     displayName: `${username}'s Application`,
                     isPublic: false,
-                    isInternal: true
+                    isInternal: true,
+                    EntitlementGroup: {
+                        create: {
+                            internal: false,
+                            hidden: false,
+                        }
+                    }
                 }
             }
         },
         include: { DefaultApplication: true }
     });
-    const defaultApplication = account.DefaultApplication!;
 
-    await dbcon.applicationMembership.create({
-        data: { applicationId: defaultApplication.id, accountId: account.id, isOwner: true }
-    });
+    await createGroupsInternalRoles(account.DefaultApplication!.entitlementGroupKey);
+    await addOwnerToApp(account.id, account.defaultApplicationId!);
 
     return account;
 }
@@ -69,7 +80,21 @@ export async function validateUserLogin(username: string, password: string): Pro
     else throw new InvalidLoginCredentialsError(potentialUser!.username, potentialUser!.passwordHash);
 }
 
-export async function generateToken(userId?: string, applicationId?: string, expires: boolean = true) : Promise<TokenData> {
+export async function getUserApplicationId(userId: string) : Promise<string> {
+    const account = await dbcon.userAccount.findFirst({where: {id: userId}});
+    return account!.defaultApplicationId!;
+}
+
+export async function generateUserToken(userId: string, expires: boolean = true) : Promise<TokenData> {
+    const appicationId = await getUserApplicationId(userId);
+    return generateToken(userId, appicationId, expires);
+}
+
+export async function generateApplicationToken(applicationId: string, expires: boolean = true) : Promise<TokenData> {
+    return generateToken(undefined, applicationId, expires);
+}
+
+async function generateToken(userId?: string, applicationId?: string, expires: boolean = true) : Promise<TokenData> {
     const secret = uuidv4();
     const secret_hash = await bcrypt.hash(secret, SALT_ROUNDS);
 
@@ -114,18 +139,18 @@ export enum TokenState {
 export async function validateToken(identity: string, secret: string) : Promise<boolean> {
     const token = await dbcon.token.findUnique({ where: { identity: identity }, select: { revoked: true, authenticated: true, secretHash: true } });
     if (isnull(token)) {
-        console.log('token is null')
-        return false
+        console.log('token is null');
+        return false;
     }
     const secretValid = await bcrypt.compare(secret, token!.secretHash);
     if (!secretValid) {
-        console.log('token secret invalid')
-        return false
+        console.log('token secret invalid');
+        return false;
     } else if (token!.revoked) {
-        console.log('token revoked')
-        return false
+        console.log('token revoked');
+        return false;
     } else {
-        console.log('Yay, or token is correct')
+        console.log('Yay, or token is correct');
         return true;
     }
 }

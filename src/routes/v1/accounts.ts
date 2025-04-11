@@ -1,11 +1,11 @@
 // Imports
 import { Router } from 'express';
-import { TokenData, createUser, generateToken, validateUserLogin } from '../utils/identity';
-import { OptionalIdentificationMiddlewear, RestrictedAccessMiddlewear } from '../middlewear/identitygate';
-import { InvalidLoginCredentialsError, InvalidPasswordError, InvalidUsernameError, NoSuchUserError } from '../utils/errors';
+import { TokenData, createUser, generateUserToken, validateUserLogin } from '../../utils/identity';
+import { OptionalIdentificationMiddlewear, RestrictedAccessMiddlewear } from '../../middlewear/identitygate';
+import { InvalidLoginCredentialsError, InvalidPasswordError, InvalidUsernameError, NoSuchUserError } from '../../utils/errors';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { assert, isnull } from '../utils/general';
-import { canUserLogin } from '../utils/permissions';
+import { isnull } from '../../utils/general';
+import { canUserLogin } from '../../utils/permissions';
 import winston from 'winston';
 
 // Get database connection
@@ -21,7 +21,7 @@ app.post('/signup/', async (req, res) => {
     const password: string | undefined = req.body.password;
 
     if (username == undefined || password == undefined) {
-        logger.warn("Username or password not provided!");
+        logger.warn('Username or password not provided!');
         return res.status(401).json({ message: 'Missing username or password!' });
     }
     
@@ -29,11 +29,11 @@ app.post('/signup/', async (req, res) => {
         logger.info('Account creation successful');
         res.status(200).json({ message: 'Account created!' });
     }).catch((e) => {
-        logger.error("Account creation failed!");
+        logger.error('Account creation failed!');
         if (e instanceof InvalidUsernameError)
-            logger.error("REASON: Invalid username supplied.");
+            logger.error('REASON: Invalid username supplied.');
         if (e instanceof InvalidPasswordError)
-            logger.error("REASON: Invalid password supplied.");
+            logger.error('REASON: Invalid password supplied.');
         if (e instanceof Prisma.PrismaClientKnownRequestError)
             logger.error(`REASON: Prisma query failed with code ${e.code}, message "${e.message}", meta: (${e.meta})`);
         logger.error(e);
@@ -49,7 +49,7 @@ app.post('/login/', async (req, res) => {
     logger.info('Processing user login request');
 
     if (username == undefined || password == undefined) {
-        logger.warn("No username or password supplied!");
+        logger.warn('No username or password supplied!');
         return res.status(401).json({ message: 'Missing username or password!' });
     }
 
@@ -61,10 +61,7 @@ app.post('/login/', async (req, res) => {
         if (allowed) {
             logger.info('Account is permitted to login.');
 
-            const useracct = await dbcon.userAccount.findFirst({where:{id:id}});
-            const defaultorg: string | undefined = useracct?.defaultApplicationId ?? undefined; // If it returns null, freaking JS being cringe
-
-            generateToken(id, defaultorg).then((token) => {
+            generateUserToken(id).then((token) => {
                 const tokenData = token;
                 const tokenString = Buffer.from(JSON.stringify(tokenData), 'utf-8').toString('base64');
 
@@ -104,7 +101,7 @@ app.use(OptionalIdentificationMiddlewear);
 
 app.get('/:username/applications/', async (req, res) => {
     const logger: winston.Logger = res.locals.logger;
-    let tokend: TokenData = res.locals.tokenData;
+    const tokend: TokenData = res.locals.tokenData;
     const username: string | undefined = req.params.username;
     const onlyShowOwnedApplications = req.query.owned;
 
