@@ -1,30 +1,30 @@
 // Imports
 import { Router } from 'express';
 import { createAssetType, getListOfAssets, issueAsset } from '../../utils/assets';
-import { canListAssets, canMakeCurrencyForApplication, canMakeGrantForCurrency } from '../../utils/permissions';
+import { canGetPublicAssetList, canMakeCurrencyForApplication, canMakeGrantForCurrency } from '../../utils/permissions';
 import { TokenData } from '../../utils/identity';
 import winston from 'winston';
-import { caster, defaultsTo, formatResponse, isnull, meResolver, validateParameter } from '../../utils/general';
+import { caster, defaultsTo, isnull, meResolver, validateParameter } from '../../utils/general';
 import { UnauthorisedError } from '../../utils/errors';
 import { IdentityRequirementMiddlewear } from '../../middlewear/identity';
 
 // Create our apps
 const assets_route = Router();
 
-assets_route.get('/', async (req, res, next) => {
+assets_route.get('/', async (req, res) => {
     const logger: winston.Logger = res.locals.log;
     const tokend: TokenData | undefined = res.locals.tokenData;
     logger.info('Processing asset list request');
 
-    if (await canListAssets(tokend)) {
+    if (await canGetPublicAssetList(tokend)) {
         const assetList = await getListOfAssets();
         logger.debug(`Assets: ${JSON.stringify(assetList)}`);
-        return next(formatResponse({
+        return res.sendAPIResponse({
             status: true,
             code: 200,
             message: 'Assets fetches successfuly',
             result: assetList
-        }));
+        });
     } else {
         throw new UnauthorisedError();
     }

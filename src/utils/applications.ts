@@ -1,4 +1,4 @@
-import { EntitlementListType, PrismaClient } from '@prisma/client';
+import { EntitlementFlags, PrismaClient } from '@prisma/client';
 import { EntitlementPriorityOffsets } from './entitlements';
 
 // Get database connection
@@ -65,7 +65,7 @@ export async function addMemberToApp(userId: string, applicationId: string) {
             EntitlementGroup: {
                 select: {
                     Roles: {
-                        where: { listType: EntitlementListType.GroupMembers }
+                        where: { flags: { hasEvery: [EntitlementFlags.Group, EntitlementFlags.MemberRole] } }
                     }
                 }
             }
@@ -88,7 +88,7 @@ export async function addAdminToApp(userId: string, applicationId: string) {
             EntitlementGroup: {
                 select: {
                     Roles: {
-                        where: { listType: EntitlementListType.GroupAdmins }
+                        where: { flags: { hasEvery: [EntitlementFlags.Group, EntitlementFlags.AdminRole] } }
                     }
                 }
             }
@@ -111,7 +111,7 @@ export async function addOwnerToApp(userId: string, applicationId: string) {
             EntitlementGroup: {
                 select: {
                     Roles: {
-                        where: { listType: EntitlementListType.GroupOwners }
+                        where: { flags: { hasEvery: [EntitlementFlags.Group, EntitlementFlags.OwnerRole] } }
                     }
                 }
             }
@@ -128,10 +128,23 @@ export async function addOwnerToApp(userId: string, applicationId: string) {
 
 async function createGroupsEveryoneRole(groupId: string) {
     return await dbcon.entitlementRole.create({ data: {
-        listType: EntitlementListType.Everyone,
+        flags: [EntitlementFlags.Group, EntitlementFlags.EveryoneRole],
         internal: true,
         hidden: false,
         name: 'everyone',
+        priority: EntitlementPriorityOffsets.systemGroup + 4,
+        UsedInGroups: {
+            connect: {id: groupId}
+        }
+    }});
+}
+
+async function createGroupsUsersRole(groupId: string) {
+    return await dbcon.entitlementRole.create({ data: {
+        flags: [EntitlementFlags.Group, EntitlementFlags.UserRole],
+        internal: true,
+        hidden: false,
+        name: 'users',
         priority: EntitlementPriorityOffsets.systemGroup + 3,
         UsedInGroups: {
             connect: {id: groupId}
@@ -141,7 +154,7 @@ async function createGroupsEveryoneRole(groupId: string) {
 
 async function createGroupsMembersRole(groupId: string) {
     return await dbcon.entitlementRole.create({ data: {
-        listType: EntitlementListType.Everyone,
+        flags: [EntitlementFlags.Group, EntitlementFlags.MemberRole],
         internal: true,
         hidden: false,
         name: 'everyone',
@@ -154,7 +167,7 @@ async function createGroupsMembersRole(groupId: string) {
 
 async function createGroupsAdminsRole(groupId: string) {
     return await dbcon.entitlementRole.create({ data: {
-        listType: EntitlementListType.Everyone,
+        flags: [EntitlementFlags.Group, EntitlementFlags.AdminRole],
         internal: true,
         hidden: false,
         name: 'everyone',
@@ -167,7 +180,7 @@ async function createGroupsAdminsRole(groupId: string) {
 
 async function createGroupsOwnersRole(groupId: string) {
     return await dbcon.entitlementRole.create({ data: {
-        listType: EntitlementListType.Everyone,
+        flags: [EntitlementFlags.Group, EntitlementFlags.OwnerRole],
         internal: true,
         hidden: false,
         name: 'everyone',
@@ -180,9 +193,10 @@ async function createGroupsOwnersRole(groupId: string) {
 
 export async function createGroupsInternalRoles(groupId: string) {
     const everyone = await createGroupsEveryoneRole(groupId);
+    const users = await createGroupsUsersRole(groupId);
     const members = await createGroupsMembersRole(groupId);
     const admins = await createGroupsAdminsRole(groupId);
     const owners = await createGroupsOwnersRole(groupId);
 
-    return {everyone: everyone.id, members: members.id, admins: admins.id, owners: owners.id};
+    return {everyone: everyone.id, users: users.id, members: members.id, admins: admins.id, owners: owners.id};
 }

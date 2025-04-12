@@ -203,6 +203,23 @@ enum EntitlementListType {
   GroupOwners
 }
 
+enum EntitlementFlags {
+  System
+  Global
+  Group
+  UserAssigned
+
+  EndUserCreated
+  AdminCreated
+  
+  BannedRole
+  EveryoneRole
+  UserRole
+  MemberRole
+  AdminRole
+  OwnerRole
+}
+
 model EntitlementRoleMembership {
   roleId String
   userId String
@@ -215,7 +232,7 @@ model EntitlementRoleMembership {
 
 model EntitlementRole {
   id String @id @default(cuid())
-  listType EntitlementListType @default(GenericRole)
+  flags EntitlementFlags[] @default([EndUserCreated])
 
   internal Boolean @default(false)        // For internal-program use (like @everyone, @admins, @banned, etc)
   hidden Boolean @default(true)           // Should this group be hidden from the end-users
