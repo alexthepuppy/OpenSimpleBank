@@ -70,7 +70,7 @@
                 volume        : Number(document.getElementById('volume').value)
             };
 
-            makePOSTRequest('currency/', JSON.stringify(payload))
+            makePOSTRequest('tokens/', JSON.stringify(payload))
             .then(reply => {
                 alert(":)")
                 console.log(reply);
@@ -101,7 +101,7 @@
             const table = document.getElementById('wallets');
             const sourcelist = document.getElementById('sources');
 
-            makeGETRequest('currency/list/').then(async (body) => {
+            makeGETRequest('tokens/list/').then(async (body) => {
                 const list = await body.json();
 
                 for (var count=0; count<list.length; count++) {

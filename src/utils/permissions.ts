@@ -8,6 +8,10 @@ const dbcon = new PrismaClient();
 
 type Token = string | TokenData;
 
+export async function canListAssets(actor?: Token) : Promise<boolean> {
+    return true;
+}
+
 export async function applyDefaultPermissionToToken(target: Token) {
 
 }

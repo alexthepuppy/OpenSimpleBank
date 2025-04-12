@@ -1,9 +1,17 @@
 // Imports
 import Express from 'express';
-import api_route from './routes/';
+import { SessionTrackingMiddlewear } from './middlewear/sessions';
+import api_route from './routes';
+import { IdentityExtractionMiddlewear } from './middlewear/identity';
+import { apiExtension } from './express-api-response';
 
 // Create application
 const app = Express();
+app.use(apiExtension);
+
+// Validate their identity
+app.use(IdentityExtractionMiddlewear);
+app.use(SessionTrackingMiddlewear);
 
 // Connect our routes
 app.use('/api/', api_route);

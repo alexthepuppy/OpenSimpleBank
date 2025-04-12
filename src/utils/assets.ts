@@ -3,7 +3,7 @@ import { PrismaClient, TransactionStatus } from '@prisma/client';
 // Get database connection
 const dbcon = new PrismaClient();
 
-export async function getListOfCurrencies() {
+export async function getListOfAssets() {
     const list = await dbcon.currency.findMany({
         select: {
             id: true,
@@ -25,7 +25,7 @@ export async function getListOfCurrencies() {
     return list;
 }
 
-export async function createCurrency(applicationId: string, symbol: string, shortName: string, longName: string, grouping: number = 3, decimals: number = 0, volume?: number) : Promise<string> {
+export async function createAssetType(applicationId: string, symbol: string, shortName: string, longName: string, grouping: number = 3, decimals: number = 0, volume?: number) : Promise<string> {
     // console.log(`Creating currency for application (${applicationId})`);
     const currency = await dbcon.currency.create({data:{
         ownerId: applicationId,
@@ -41,7 +41,7 @@ export async function createCurrency(applicationId: string, symbol: string, shor
     return currency.id;
 }
 
-export async function issueGrant(
+export async function issueAsset(
     creditorId: string, 
     currencyId: string, 
     value: number, 

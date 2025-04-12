@@ -1,24 +1,23 @@
 // Imports
 import { Router } from 'express';
-import { isnull } from '../utils/general';
 import { TokenData, validateToken } from '../utils/identity';
+import winston from 'winston';
 
 // Create our apps
-const SessionMiddlewear = Router();
-const OptionalIdentificationMiddlewear = Router();
-const RestrictedAccessMiddlewear = Router();
+// const SessionMiddlewear = Router();
+const IdentityExtractionMiddlewear = Router();
+const IdentityRequirementMiddlewear = Router();
 
-OptionalIdentificationMiddlewear.use(async (req, res, next) => {
-    const logger = res.locals.logger;
+IdentityExtractionMiddlewear.use(async (req, res, next) => {
+    const logger: winston.Logger = res.locals.log;
+    logger.info('Attempting to authorized request...');
 
-
-    logger.info('Checking for authentication');
     // Step 1. Get our token
     const token = req.cookies['token'];
 
     // Check the token
     if (token == null || token == undefined) {
-        logger.info('No identity provided!');
+        logger.info('Not authorised! No token provided.');
         next();
     } else {
         logger.info('Found identity token!');
@@ -42,18 +41,21 @@ OptionalIdentificationMiddlewear.use(async (req, res, next) => {
     }
 });
 
-RestrictedAccessMiddlewear.use(OptionalIdentificationMiddlewear);
+IdentityRequirementMiddlewear.use(IdentityExtractionMiddlewear, async (req, res, next) => {
+    const logger: winston.Logger = res.locals.log;
+    const token: TokenData | undefined = res.locals.token;
 
-RestrictedAccessMiddlewear.use(async (req, res, next) => {
-    const logger = res.locals.logger;
-    logger.info('Passing through *mandatory* authentication');
-    if (isnull(res.locals.token)) {
+    logger.debug('Passing through mandatory authorisation boundry!');
+    if (token == undefined) {
         logger.warn('Failed to validate identity, rejecting traffic!');
-        return res.status(401).send('');
+        return res.sendAPIResponse({
+            status: false,
+            code: 401,
+            message: 'Unauthorized!'
+        });
     }
-    // console.log('(SIG PASSED)');
     return next();
 });
 
 // Export the app :D
-export { OptionalIdentificationMiddlewear, RestrictedAccessMiddlewear };
+export { IdentityExtractionMiddlewear, IdentityRequirementMiddlewear };

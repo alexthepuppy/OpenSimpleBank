@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { InvalidLoginCredentialsError, InvalidPasswordError, InvalidTokenSecret, InvalidUsernameError, MissingRequiredParametersError, NoSuchTokenError, NoSuchUserError } from './errors';
+import { InvalidLoginCredentialsError, InvalidPasswordError, InvalidTokenSecret, InvalidUsernameError, MissingRequiredParameterError, NoSuchTokenError, NoSuchUserError } from './errors';
 import { isnull } from './general';
 import { addOwnerToApp, createGroupsInternalRoles } from './applications';
 
@@ -100,7 +100,7 @@ async function generateToken(userId?: string, applicationId?: string, expires: b
 
     if (isnull(userId) && isnull(applicationId)) {
         // Nothing provided
-        throw new MissingRequiredParametersError();
+        throw new MissingRequiredParameterError();
     }
 
     const timestamp = new Date(Date.now());

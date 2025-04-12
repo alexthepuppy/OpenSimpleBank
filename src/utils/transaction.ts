@@ -1,7 +1,7 @@
 // Imports
 import { Prisma, PrismaClient, TransactionStatus } from '@prisma/client';
 import { ifndef } from './general';
-import { BalanceInsufficentError, CurrencyMismatchError, NoSuchWalletError, UserUnauthorisedError } from './errors';
+import { BalanceInsufficentError, CurrencyMismatchError, NoSuchWalletError, UnauthorisedError } from './errors';
 import { canStartTransactionFor } from './permissions';
 
 // Get database connection
@@ -38,7 +38,7 @@ export async function beginTransaction(debtorAddress: string, creditorAddress: s
     // Step 2. Validate if the current user is allowed to make transactions with that wallet
     const authorised = canStartTransactionFor(actorToken, debtorAddress);
 
-    if (!authorised) throw new UserUnauthorisedError();
+    if (!authorised) throw new UnauthorisedError();
 
     if (source_wallet!.currencyId != destination_wallet?.currencyId) throw new CurrencyMismatchError();
     if (source_wallet!.balance < transaction_value) throw new BalanceInsufficentError();
